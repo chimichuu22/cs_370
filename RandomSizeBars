@@ -1,0 +1,91 @@
+package com.example.randombar;
+
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.stage.Stage;
+
+import java.io.IOException;
+import java.util.Random;
+
+public class HelloApplication extends Application {
+    Rectangle bar1, bar2, bar3, bar4, bar5, bar6;
+
+    @Override
+    public void start(Stage stage) throws IOException {
+        FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("hello-view.fxml"));
+        Pane root = new Pane();//fxmlLoader.load();
+        Scene scene = new Scene( root, 640, 640);
+
+        //MAKE: grid (can resize after that)
+        //can probably shorten this
+        int rec_width = 30;
+        int rec_length = 70;
+        bar1 = new Rectangle(rec_width,  rec_length, Color.GREEN);
+        root.getChildren().add(bar1);
+        bar1.setLayoutX(50);
+        bar1.setLayoutY(500);
+        bar2 = new Rectangle(rec_width, rec_length, Color.BLUE);
+        root.getChildren().add(bar2);
+        bar2.setLayoutX(150);
+        bar2.setLayoutY(500);
+        bar3 = new Rectangle(rec_width, rec_length, Color.RED);
+        root.getChildren().add(bar3);
+        bar3.setLayoutX(250);
+        bar3.setLayoutY(500);
+        bar4 = new Rectangle(rec_width, rec_length, Color.PURPLE);
+        root.getChildren().add(bar4);
+        bar4.setLayoutX(350);
+        bar4.setLayoutY(500);
+        bar5 = new Rectangle(rec_width, rec_length, Color.ORANGE);
+        root.getChildren().add(bar5);
+        bar5.setLayoutX(450);
+        bar5.setLayoutY(500);
+        bar6 = new Rectangle(rec_width, rec_length, Color.TEAL);
+        root.getChildren().add(bar6);
+        bar6.setLayoutX(550);
+        bar6.setLayoutY(500);
+        //can add more bars if needed
+
+        Button redraw = new Button();
+        redraw.setText("Redraw");
+        redraw.setOnAction(event-> {
+            onRandom();
+        });
+        //place button
+        redraw.setLayoutX(0);
+        redraw.setLayoutY(0);
+        root.getChildren().add(redraw);
+
+        stage.setTitle("Lab03: Random Bars");
+        stage.setScene(scene);
+        stage.show();
+
+    }
+
+    Random random = new Random();
+    void onRandom() {
+        //MAKE: bars change colors
+        bar1.setHeight(random.nextDouble()* 500);
+        bar1.setY(70 - bar1.getHeight());
+        bar2.setHeight(random.nextDouble()* 500);
+        bar2.setY(70 - bar2.getHeight());
+        bar3.setHeight(random.nextDouble()* 500);
+        bar3.setY(70 - bar3.getHeight());
+        bar4.setHeight(random.nextDouble()* 500);
+        bar4.setY(70 - bar4.getHeight());
+        bar5.setHeight(random.nextDouble()* 500);
+        bar5.setY(70 - bar5.getHeight());
+        bar6.setHeight(random.nextDouble()* 500);
+        bar6.setY(70 - bar6.getHeight());
+
+    }
+
+    public static void main(String[] args) {
+       launch();
+    }
+}
