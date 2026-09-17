@@ -14,7 +14,7 @@ public class RandomBarChart extends JFrame {
 
         BarChartPanel chartPanel = new BarChartPanel();
 
-        JButton redrawButton = new JButton("Regenerate");
+        JButton redrawButton = new JButton("Redraw");
 
         redrawButton.addActionListener(event -> {
             chartPanel.redrawBars();
