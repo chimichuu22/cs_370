@@ -1,0 +1,694 @@
+package com.example.cards;
+
+import java.awt.*;
+import java.util.ArrayList;
+import javax.swing.*;
+import java.util.Collections;
+
+public class Cards {
+
+    // Represents one card
+    private class Card {
+        String value;
+        String type;
+
+        Card(String value, String type) {
+            this.value = value;
+            this.type = type;
+        }
+    }
+
+    int cardWidth = 70;
+    int cardHeight = 110;
+
+    ArrayList<Card> deck;
+
+    // Cards currently being used in the game
+    ArrayList<Card> playerCards = new ArrayList<>();
+    ArrayList<Card> dealerCards = new ArrayList<>();
+
+    JFrame frame = new JFrame("Card Shuffler");
+
+    // Game state
+    boolean gameStarted = false;
+    boolean gameOver = false;
+    boolean dealerCardHidden = false;
+
+    String gameMessage = "";
+
+    Color tableGreen = new Color(0, 100, 0);
+
+    JPanel gamePanel = new JPanel() {
+        @Override
+        public void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            if (!gameStarted) {
+                // --------------------------------
+                // INITIAL DECK VIEW
+                // --------------------------------
+
+                for (int i = 0; i < deck.size(); i++) {
+
+                    Card current = deck.get(i);
+
+                    String folder = "/Classic/"
+                            + current.type
+                            + current.value
+                            + ".png";
+
+                    Image image = new ImageIcon(
+                            getClass().getResource(folder)
+                    ).getImage();
+
+                    int drawX = 30 + (i % 13) * 80;
+                    int drawY = 30 + (i / 13) * 150;
+
+                    g.drawImage(
+                            image,
+                            drawX,
+                            drawY,
+                            cardWidth,
+                            cardHeight,
+                            null
+                    );
+                }
+
+                return;
+            }
+
+            // --------------------------------
+            // GAME VIEW
+            // --------------------------------
+
+            // Player total
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 22));
+
+            int playerTotal = getHandValue(playerCards);
+
+            g.drawString(
+                    "Your Total: " + playerTotal,
+                    30,
+                    500
+            );
+
+            // Dealer total
+            int dealerTotal;
+
+            if (dealerCardHidden) {
+                // Only count the visible dealer card
+                ArrayList<Card> visibleDealerCard = new ArrayList<>();
+
+                if (dealerCards.size() > 1) {
+                    visibleDealerCard.add(dealerCards.get(1));
+                }
+
+                dealerTotal = getHandValue(visibleDealerCard);
+
+                g.drawString(
+                        "Dealer Total: " + dealerTotal + " + ?",
+                        30,
+                        50
+                );
+            } else {
+                dealerTotal = getHandValue(dealerCards);
+
+                g.drawString(
+                        "Dealer Total: " + dealerTotal,
+                        30,
+                        50
+                );
+            }
+
+            // --------------------------------
+            // DRAW DEALER CARDS
+            // --------------------------------
+
+            // Hidden dealer card
+            if (dealerCardHidden && dealerCards.size() > 0) {
+
+                String backPath = "/Classic/card_back.png";
+
+                Image backImage = new ImageIcon(
+                        getClass().getResource(backPath)
+                ).getImage();
+
+                // Hidden card in the top-right
+                g.drawImage(
+                        backImage,
+                        850,
+                        70,
+                        cardWidth,
+                        cardHeight,
+                        null
+                );
+            } else if (dealerCards.size() > 0) {
+
+                // When the card is revealed
+                drawCard(g, dealerCards.get(0), 850, 70);
+            }
+
+            // Visible dealer card
+            if (dealerCards.size() > 1) {
+                drawCard(g, dealerCards.get(1), 770, 70);
+            }
+
+            // --------------------------------
+            // DRAW PLAYER CARDS
+            // --------------------------------
+
+            for (int i = 0; i < playerCards.size(); i++) {
+
+                int drawX = 400 + (i * 80);
+                int drawY = 480;
+
+                drawCard(
+                        g,
+                        playerCards.get(i),
+                        drawX,
+                        drawY
+                );
+            }
+
+            // --------------------------------
+            // GAME OVER MESSAGE
+            // --------------------------------
+
+            if (gameOver) {
+
+                g.setFont(new Font("Arial", Font.BOLD, 40));
+
+                // Center the message
+                FontMetrics metrics = g.getFontMetrics();
+
+                int textWidth =
+                        metrics.stringWidth(gameMessage);
+
+                int x =
+                        (gamePanel.getWidth() - textWidth) / 2;
+
+                g.drawString(
+                        gameMessage,
+                        x,
+                        350
+                );
+            }
+        }
+    };
+
+    // Draws an individual card
+    private void drawCard(
+            Graphics g,
+            Card card,
+            int x,
+            int y
+    ) {
+
+        String folder =
+                "/Classic/"
+                        + card.type
+                        + card.value
+                        + ".png";
+
+        Image image = new ImageIcon(
+                getClass().getResource(folder)
+        ).getImage();
+
+        g.drawImage(
+                image,
+                x,
+                y,
+                cardWidth,
+                cardHeight,
+                null
+        );
+    }
+
+    Cards() {
+
+        buildDeck();
+
+        // --------------------------------
+        // GAME PANEL
+        // --------------------------------
+
+        gamePanel.setBackground(tableGreen);
+
+        frame.setLayout(new BorderLayout());
+
+        frame.add(
+                gamePanel,
+                BorderLayout.CENTER
+        );
+
+        // --------------------------------
+        // BUTTON PANEL
+        // --------------------------------
+
+        JPanel bottomPanel = new JPanel();
+
+        bottomPanel.setBackground(tableGreen);
+
+        bottomPanel.setBorder(
+                BorderFactory.createEmptyBorder(
+                        10,
+                        10,
+                        25,
+                        10
+                )
+        );
+
+        // --------------------------------
+        // SHUFFLE BUTTON
+        // --------------------------------
+
+        JButton shuffleButton =
+                new JButton("Shuffle Cards");
+
+        shuffleButton.addActionListener(e -> {
+
+            if (!gameStarted) {
+                Collections.shuffle(deck);
+                gamePanel.repaint();
+            }
+        });
+
+        // --------------------------------
+        // START GAME BUTTON
+        // --------------------------------
+
+        JButton startButton =
+                new JButton("Start Game");
+
+        startButton.addActionListener(e -> {
+            startGame();
+        });
+
+        bottomPanel.add(shuffleButton);
+        bottomPanel.add(startButton);
+
+        frame.add(
+                bottomPanel,
+                BorderLayout.SOUTH
+        );
+
+        // --------------------------------
+        // WINDOW SETTINGS
+        // --------------------------------
+
+        frame.setSize(1100, 750);
+
+        frame.setDefaultCloseOperation(
+                JFrame.EXIT_ON_CLOSE
+        );
+
+        frame.setLocationRelativeTo(null);
+
+        frame.setVisible(true);
+    }
+
+    // ========================================
+    // START GAME
+    // ========================================
+
+    private void startGame() {
+
+        // Make sure the deck is fresh
+        buildDeck();
+
+        // Shuffle the deck
+        Collections.shuffle(deck);
+
+        // Clear old cards
+        playerCards.clear();
+        dealerCards.clear();
+
+        gameStarted = true;
+        gameOver = false;
+        dealerCardHidden = true;
+        gameMessage = "";
+
+        // --------------------------------
+        // DEAL CARDS
+        // --------------------------------
+
+        // First card goes to player
+        playerCards.add(deck.remove(0));
+
+        // Second card goes to dealer
+        // This card will be visible
+        dealerCards.add(deck.remove(0));
+
+        // Third card goes to dealer
+        // This card will be hidden
+        dealerCards.add(deck.remove(0));
+
+        // Change the buttons
+        updateGameButtons();
+
+        gamePanel.repaint();
+    }
+
+    // ========================================
+    // CHANGE BUTTONS DURING GAME
+    // ========================================
+
+    private void updateGameButtons() {
+
+        JPanel bottomPanel =
+                (JPanel) frame.getContentPane()
+                        .getComponent(1);
+
+        bottomPanel.removeAll();
+
+        if (!gameOver) {
+
+            // --------------------------------
+            // HIT BUTTON
+            // --------------------------------
+
+            JButton hitButton =
+                    new JButton("Hit");
+
+            hitButton.addActionListener(e -> {
+                hit();
+            });
+
+            // --------------------------------
+            // STAY BUTTON
+            // --------------------------------
+
+            JButton stayButton =
+                    new JButton("Stay");
+
+            stayButton.addActionListener(e -> {
+                stay();
+            });
+
+            bottomPanel.add(hitButton);
+            bottomPanel.add(stayButton);
+
+        } else {
+
+            // --------------------------------
+            // RESTART BUTTON
+            // --------------------------------
+
+            JButton restartButton =
+                    new JButton("Restart Game");
+
+            restartButton.addActionListener(e -> {
+                restartGame();
+            });
+
+            bottomPanel.add(restartButton);
+        }
+
+        bottomPanel.revalidate();
+        bottomPanel.repaint();
+    }
+
+    // ========================================
+    // HIT
+    // ========================================
+
+    private void hit() {
+
+        if (gameOver) {
+            return;
+        }
+
+        // Give the player the next card
+        if (!deck.isEmpty()) {
+            Card playerCard = deck.remove(0);
+            playerCards.add(playerCard);
+        }
+
+        // Then give the dealer the next card
+        if (!deck.isEmpty()) {
+            Card dealerCard = deck.remove(0);
+            dealerCards.add(dealerCard);
+        }
+
+        // Check player's total
+        int playerTotal = getHandValue(playerCards);
+
+        // If player goes over 21
+        if (playerTotal > 21) {
+
+            gameMessage = "You Lose";
+
+            gameOver = true;
+
+            // Reveal dealer's hidden card
+            dealerCardHidden = false;
+
+            updateGameButtons();
+        }
+
+        gamePanel.repaint();
+    }
+
+
+    // ========================================
+    // STAY
+    // ========================================
+
+    private void stay() {
+
+        if (gameOver) {
+            return;
+        }
+
+        // Reveal the dealer's hidden card
+        dealerCardHidden = false;
+
+        int playerTotal =
+                getHandValue(playerCards);
+
+        int dealerTotal =
+                getHandValue(dealerCards);
+
+        // --------------------------------
+        // COMPARE TOTALS
+        // --------------------------------
+
+        if (playerTotal > 21) {
+
+            gameMessage = "You Lose";
+
+        } else if (dealerTotal > 21) {
+
+            gameMessage = "You Win";
+
+        } else if (playerTotal > dealerTotal) {
+
+            gameMessage = "You Win";
+
+        } else if (playerTotal < dealerTotal) {
+
+            gameMessage = "You Lose";
+
+        } else {
+
+            gameMessage = "Tie";
+        }
+
+        gameOver = true;
+
+        updateGameButtons();
+
+        gamePanel.repaint();
+    }
+
+    // ========================================
+    // RESTART GAME
+    // ========================================
+
+    private void restartGame() {
+
+        gameStarted = false;
+        gameOver = false;
+        dealerCardHidden = false;
+
+        gameMessage = "";
+
+        playerCards.clear();
+        dealerCards.clear();
+
+        // Build a fresh deck
+        buildDeck();
+
+        updateInitialButtons();
+
+        gamePanel.repaint();
+    }
+
+    // ========================================
+    // RESTORE INITIAL BUTTONS
+    // ========================================
+
+    private void updateInitialButtons() {
+
+        JPanel bottomPanel =
+                (JPanel) frame.getContentPane()
+                        .getComponent(1);
+
+        bottomPanel.removeAll();
+
+        // Shuffle button
+        JButton shuffleButton =
+                new JButton("Shuffle Cards");
+
+        shuffleButton.addActionListener(e -> {
+
+            Collections.shuffle(deck);
+
+            gamePanel.repaint();
+        });
+
+        // Start button
+        JButton startButton =
+                new JButton("Start Game");
+
+        startButton.addActionListener(e -> {
+            startGame();
+        });
+
+        bottomPanel.add(shuffleButton);
+        bottomPanel.add(startButton);
+
+        bottomPanel.revalidate();
+        bottomPanel.repaint();
+    }
+
+    // ========================================
+    // CALCULATE CARD TOTAL
+    // ========================================
+
+    private int getHandValue(
+            ArrayList<Card> hand
+    ) {
+
+        int total = 0;
+
+        int numberOfAces = 0;
+
+        for (Card card : hand) {
+
+            int value = getCardValue(card);
+
+            total += value;
+
+            // Ace initially counts as 11
+            if (card.value.equals("01")) {
+                numberOfAces++;
+            }
+        }
+
+        // Change Aces from 11 to 1
+        // if the total would otherwise go over 21
+        while (total > 21 && numberOfAces > 0) {
+
+            total -= 10;
+
+            numberOfAces--;
+        }
+
+        return total;
+    }
+
+    // ========================================
+    // GET INDIVIDUAL CARD VALUE
+    // ========================================
+
+    private int getCardValue(Card card) {
+
+        switch (card.value) {
+
+            // Ace
+            case "01":
+                return 11;
+
+            // 2 through 9
+            case "02":
+                return 2;
+
+            case "03":
+                return 3;
+
+            case "04":
+                return 4;
+
+            case "05":
+                return 5;
+
+            case "06":
+                return 6;
+
+            case "07":
+                return 7;
+
+            case "08":
+                return 8;
+
+            case "09":
+                return 9;
+
+            // 10, Jack, Queen, King
+            case "10":
+            case "11":
+            case "12":
+            case "13":
+                return 10;
+
+            default:
+                return 0;
+        }
+    }
+
+    // ========================================
+    // BUILD DECK
+    // ========================================
+
+    public void buildDeck() {
+
+        deck = new ArrayList<Card>();
+
+        String[] values = {
+                "01", "02", "03", "04", "05", "06", "07",
+                "08", "09", "10", "11", "12", "13"
+        };
+
+        String[] types = {
+                "c", "d", "s", "h"
+        };
+
+        for (int i = 0; i < types.length; i++) {
+
+            for (int j = 0; j < values.length; j++) {
+
+                Card card =
+                        new Card(
+                                values[j],
+                                types[i]
+                        );
+
+                deck.add(card);
+            }
+        }
+    }
+
+    // ========================================
+    // MAIN
+    // ========================================
+
+    public static void main(String[] args) {
+
+        SwingUtilities.invokeLater(() -> {
+            new Cards();
+        });
+    }
+}
+
